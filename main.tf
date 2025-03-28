@@ -18,9 +18,9 @@ provider "aws" {
 }
 
 resource "aws_instance" "ec2_instance" {
-  count                         = length(var.instance_types)
+  count                         = var.instance_count
   ami                           = var.ami_id
-  instance_type                 = var.instance_types[count.index]
+  instance_type                 = element(var.instance_types, count.index % length(var.instance_types))
   subnet_id                     = var.subnet_id
   associate_public_ip_address   = true
 
