@@ -22,7 +22,7 @@ variable "instance_types" {
   default     = ["t4g.micro"]
   validation {
     condition     = alltrue([for t in var.instance_types : contains(["t4g.micro", "t4g.nano", "t4g.small", "t4g.medium"], t)])
-    error_message = "All instance types must be one of: t4g.nano, t4g.micro, t4g.small, or t4g.medium."
+    error_message = "All instance types must be one of: t4g.nano, t4g.micro, t4g.small, or t4g.medium"
   }
 }
 
