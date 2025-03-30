@@ -1,35 +1,20 @@
-name: Terraform Destroy
+name: Terraform Deploy to AWS
 
 on:
-  workflow_dispatch:
-    inputs:
-      confirm_destroy:
-        description: 'Type "YES" to confirm destroy'
-        required: true
+  push:
+    branches:
+      - main
 
 jobs:
-  terraform-destroy:
-    name: Terraform Destroy
+  terraform:
+    name: Terraform Apply
     runs-on: ubuntu-latest
-
-    # Environment block - optional: enable if you want manual approvals
-    # environment:
-    #   name: production  # or staging, dev, etc.
 
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
     steps:
-      - name: Debug input value
-        run: echo "User provided confirm_destroy = '${{ github.event.inputs.confirm_destroy }}'"
-
-      - name: Check confirmation input
-        if: ${{ ! (github.event.inputs.confirm_destroy == 'YES' || github.event.inputs.confirm_destroy == 'yes') }}
-        run: |
-          echo "🛑 Destroy not confirmed. Type 'YES' to proceed."
-          exit 1
-
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -41,8 +26,11 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      - name: Terraform Plan (Destroy)
-        run: terraform plan -destroy -out=tfplan
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
 
-      - name: Terraform Apply (Destroy)
+      - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
+
+      - name: Terraform Output
+        run: terraform output
