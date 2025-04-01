@@ -16,6 +16,11 @@ jobs:
 
     environment: ${{ github.ref_name == 'prod' && 'production' || '' }}
 
+    # 🔐 Inject AWS credentials from GitHub Secrets
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
     steps:
       - name: 📦 Checkout Code
         uses: actions/checkout@v3
@@ -28,8 +33,11 @@ jobs:
       - name: 🧠 Detect Environment from Branch
         id: env
         run: |
-          BRANCH="${GITHUB_REF##*/}"
+          BRANCH=$(echo "${GITHUB_REF#refs/heads/}" | tr -d '\n')
           echo "env_name=$BRANCH" >> $GITHUB_OUTPUT
+
+      - name: 🔍 Check Terraform Format
+        run: terraform fmt -check -recursive
 
       - name: 📁 Terraform Init
         run: terraform init -backend-config=backends/${{ steps.env.outputs.env_name }}.backend
@@ -37,6 +45,6 @@ jobs:
       - name: 📋 Terraform Plan
         run: terraform plan -var-file=envs/${{ steps.env.outputs.env_name }}.tfvars
 
-      - name: 🚀 Terraform Apply (only for push)
+      - name: 🚀 Terraform Apply (only on push)
         if: github.event_name == 'push'
         run: terraform apply -auto-approve -var-file=envs/${{ steps.env.outputs.env_name }}.tfvars
