@@ -7,13 +7,13 @@ variable "aws_region" {
 variable "ami_id" {
   description = "AMI ID to use for EC2 instances"
   type        = string
-  default     = "ami-00101c3551c99b710"  # Replace with valid AMI
+  default     = "ami-00101c3551c99b710" # Replace with valid AMI
 }
 
 variable "subnet_id" {
   description = "Subnet ID to launch EC2 instances in"
   type        = string
-  default     = "subnet-2349730d"  # Replace with valid subnet ID
+  default     = "subnet-2349730d" # Replace with valid subnet ID
 }
 
 variable "instance_types" {
