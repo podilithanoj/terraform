@@ -1,4 +1,4 @@
-instance_types = ["t4g.nano"]
+instance_types = ["t4g.micro"]
 instance_count = 1
 common_tags = {
   Owner       = "podilithanoj"
