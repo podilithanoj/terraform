@@ -1,36 +1,55 @@
-name: Terraform Deploy to AWS
+name: Terraform CI/CD
 
 on:
   push:
     branches:
-      - main
+      - dev
+      - staging
+  pull_request:
+    branches:
+      - prod
 
 jobs:
   terraform:
-    name: Terraform Apply
+    name: Terraform Workflow
     runs-on: ubuntu-latest
 
+    environment: ${{ github.ref_name == 'prod' && 'production' || '' }}
+
+    # 🔐 Inject AWS credentials from GitHub Secrets
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
     steps:
-      - name: Checkout code
+      - name: 📦 Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v2
+      - name: 🔧 Setup Terraform
+        uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.6.6
+          terraform_version: 1.6.0
 
-      - name: Terraform Init
-        run: terraform init
+      - name: 🧠 Detect Environment from Branch
+        id: env
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # For pull requests, use the target (base) branch for environment detection
+            BRANCH="${{ github.event.pull_request.base.ref }}"
+          else
+            BRANCH=$(echo "${GITHUB_REF#refs/heads/}" | tr -d '\n')
+          fi
+          echo "env_name=$BRANCH" >> $GITHUB_OUTPUT
 
-      - name: Terraform Plan
-        run: terraform plan -out=tfplan
+      - name: 🔍 Check Terraform Format
+        run: terraform fmt -check -recursive
 
-      - name: Terraform Apply
-        run: terraform apply -auto-approve tfplan
+      - name: 📁 Terraform Init
+        run: terraform init -backend-config=backends/${{ steps.env.outputs.env_name }}.backend
 
-      - name: Terraform Output
-        run: terraform output
+      - name: 📋 Terraform Plan
+        run: terraform plan -var-file=envs/${{ steps.env.outputs.env_name }}.tfvars
+
+      - name: 🚀 Terraform Apply (only on push)
+        if: github.event_name == 'push'
+        run: terraform apply -auto-approve -var-file=envs/${{ steps.env.outputs.env_name }}.tfvars
