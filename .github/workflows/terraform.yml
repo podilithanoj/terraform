@@ -33,7 +33,12 @@ jobs:
       - name: 🧠 Detect Environment from Branch
         id: env
         run: |
-          BRANCH=$(echo "${GITHUB_REF#refs/heads/}" | tr -d '\n')
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # For pull requests, use the target (base) branch for environment detection
+            BRANCH="${{ github.event.pull_request.base.ref }}"
+          else
+            BRANCH=$(echo "${GITHUB_REF#refs/heads/}" | tr -d '\n')
+          fi
           echo "env_name=$BRANCH" >> $GITHUB_OUTPUT
 
       - name: 🔍 Check Terraform Format
