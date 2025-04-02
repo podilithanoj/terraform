@@ -3,5 +3,5 @@ instance_count = 2
 common_tags = {
   Owner       = "podilithanoj"
   Environment = "staging"
-  Project     = "OnwardBills"
+  Project     = "OnwardBill"
 }
