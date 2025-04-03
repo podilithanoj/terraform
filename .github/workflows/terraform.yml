@@ -1,4 +1,4 @@
-name: Terraform CI/CD with Plan Approval
+name: Terraform CI/CD with Manual Approval
 
 on:
   push:
@@ -27,7 +27,7 @@ jobs:
         with:
           terraform_version: 1.6.0
 
-      - name: 🧠 Detect Environment
+      - name: 🧠 Detect Environment from Branch
         id: env
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -47,7 +47,7 @@ jobs:
         run: terraform plan -out=tfplan -var-file=envs/${{ steps.env.outputs.env_name }}.tfvars
 
       - name: 📤 Upload tfplan artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: tfplan
           path: tfplan
@@ -77,14 +77,12 @@ jobs:
 
       - name: 🔧 Setup Terraform
         uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.6.0
 
       - name: 📁 Terraform Init
         run: terraform init -backend-config=backends/${{ needs.terraform.outputs.env_name }}.backend
 
       - name: 📥 Download tfplan
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v2
         with:
           name: tfplan
 
