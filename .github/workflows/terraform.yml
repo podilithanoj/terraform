@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [prod]
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   terraform:
     name: 📋 Terraform Plan
@@ -47,7 +51,7 @@ jobs:
         run: terraform plan -out=tfplan -var-file=envs/${{ steps.env.outputs.env_name }}.tfvars
 
       - name: 📤 Upload tfplan artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: tfplan
           path: tfplan
@@ -82,7 +86,7 @@ jobs:
         run: terraform init -backend-config=backends/${{ needs.terraform.outputs.env_name }}.backend
 
       - name: 📥 Download tfplan
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: tfplan
 
