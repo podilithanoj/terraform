@@ -8,6 +8,16 @@ on:
   pull_request:
     branches:
       - prod
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Do you want to run terraform apply?"
+        required: true
+        default: "no"
+        type: choice
+        options:
+          - yes
+          - no
 
 jobs:
   terraform:
@@ -16,7 +26,6 @@ jobs:
 
     environment: ${{ github.ref_name == 'prod' && 'production' || '' }}
 
-    # 🔐 Inject AWS credentials from GitHub Secrets
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -34,7 +43,6 @@ jobs:
         id: env
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # For pull requests, use the target (base) branch for environment detection
             BRANCH="${{ github.event.pull_request.base.ref }}"
           else
             BRANCH=$(echo "${GITHUB_REF#refs/heads/}" | tr -d '\n')
@@ -50,6 +58,6 @@ jobs:
       - name: 📋 Terraform Plan
         run: terraform plan -var-file=envs/${{ steps.env.outputs.env_name }}.tfvars
 
-      - name: 🚀 Terraform Apply (only on push)
-        if: github.event_name == 'push'
+      - name: 🚀 Terraform Apply (manual control)
+        if: github.event.inputs.apply == 'yes'
         run: terraform apply -auto-approve -var-file=envs/${{ steps.env.outputs.env_name }}.tfvars
