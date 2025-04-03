@@ -1,4 +1,4 @@
-name: Terraform CI/CD
+name: Terraform CI/CD with Manual Approval
 
 on:
   push:
@@ -31,7 +31,7 @@ jobs:
         with:
           terraform_version: 1.6.0
 
-      - name: 🧠 Detect Environment
+      - name: 🧠 Detect Environment from Branch
         id: env
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
