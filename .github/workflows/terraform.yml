@@ -1,22 +1,19 @@
-name: Terraform CI/CD
+name: Terraform CI/CD with Mandatory Approval
 
 on:
   push:
-    branches:
-      - dev
-      - staging
+    branches: [dev, staging, prod]
   pull_request:
-    branches:
-      - prod
+    branches: [prod]
 
 jobs:
   terraform:
-    name: Terraform Workflow
+    name: 📋 Terraform Plan
     runs-on: ubuntu-latest
 
-    environment: ${{ github.ref_name == 'prod' && 'production' || '' }}
+    outputs:
+      env_name: ${{ steps.env.outputs.env_name }}
 
-    # 🔐 Inject AWS credentials from GitHub Secrets
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -34,10 +31,9 @@ jobs:
         id: env
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # For pull requests, use the target (base) branch for environment detection
             BRANCH="${{ github.event.pull_request.base.ref }}"
           else
-            BRANCH=$(echo "${GITHUB_REF#refs/heads/}" | tr -d '\n')
+            BRANCH="${GITHUB_REF#refs/heads/}"
           fi
           echo "env_name=$BRANCH" >> $GITHUB_OUTPUT
 
@@ -48,8 +44,36 @@ jobs:
         run: terraform init -backend-config=backends/${{ steps.env.outputs.env_name }}.backend
 
       - name: 📋 Terraform Plan
-        run: terraform plan -var-file=envs/${{ steps.env.outputs.env_name }}.tfvars
+        run: terraform plan -out=tfplan -var-file=envs/${{ steps.env.outputs.env_name }}.tfvars
 
-      - name: 🚀 Terraform Apply (only on push)
-        if: github.event_name == 'push'
-        run: terraform apply -auto-approve -var-file=envs/${{ steps.env.outputs.env_name }}.tfvars
+  confirm:
+    name: ✅ Manual Approval Required
+    needs: terraform
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ needs.terraform.outputs.env_name }}  # Uses GitHub Environments
+    steps:
+      - name: ⏳ Awaiting Approval
+        run: echo "Waiting for approval to apply changes to '${{ needs.terraform.outputs.env_name }}'..."
+
+  apply:
+    name: 🚀 Terraform Apply
+    needs: confirm
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    steps:
+      - name: 📦 Checkout Code
+        uses: actions/checkout@v3
+
+      - name: 🔧 Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: 📁 Terraform Init
+        run: terraform init -backend-config=backends/${{ needs.terraform.outputs.env_name }}.backend
+
+      - name: 🚀 Terraform Apply
+        run: terraform apply -auto-approve tfplan
