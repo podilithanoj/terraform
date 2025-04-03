@@ -58,6 +58,6 @@ jobs:
       - name: 📋 Terraform Plan
         run: terraform plan -var-file=envs/${{ steps.env.outputs.env_name }}.tfvars
 
-      - name: 🚀 Terraform Apply (manual control)
-        if: github.event.inputs.apply == 'yes'
+      - name: 🚀 Terraform Apply (only if input is yes)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'yes'
         run: terraform apply -auto-approve -var-file=envs/${{ steps.env.outputs.env_name }}.tfvars
