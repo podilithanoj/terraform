@@ -1,4 +1,4 @@
-name: Terraform CI/CD with Mandatory Approval
+name: Terraform CI/CD with Plan Approval
 
 on:
   push:
@@ -27,7 +27,7 @@ jobs:
         with:
           terraform_version: 1.6.0
 
-      - name: 🧠 Detect Environment from Branch
+      - name: 🧠 Detect Environment
         id: env
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -46,15 +46,21 @@ jobs:
       - name: 📋 Terraform Plan
         run: terraform plan -out=tfplan -var-file=envs/${{ steps.env.outputs.env_name }}.tfvars
 
+      - name: 📤 Upload tfplan artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: tfplan
+          path: tfplan
+
   confirm:
     name: ✅ Manual Approval Required
     needs: terraform
     runs-on: ubuntu-latest
     environment:
-      name: ${{ needs.terraform.outputs.env_name }}  # Uses GitHub Environments
+      name: ${{ needs.terraform.outputs.env_name }}
     steps:
       - name: ⏳ Awaiting Approval
-        run: echo "Waiting for approval to apply changes to '${{ needs.terraform.outputs.env_name }}'..."
+        run: echo "Waiting for approval to apply '${{ needs.terraform.outputs.env_name }}' environment..."
 
   apply:
     name: 🚀 Terraform Apply
@@ -71,9 +77,16 @@ jobs:
 
       - name: 🔧 Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
 
       - name: 📁 Terraform Init
         run: terraform init -backend-config=backends/${{ needs.terraform.outputs.env_name }}.backend
+
+      - name: 📥 Download tfplan
+        uses: actions/download-artifact@v3
+        with:
+          name: tfplan
 
       - name: 🚀 Terraform Apply
         run: terraform apply -auto-approve tfplan
