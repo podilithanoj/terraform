@@ -1,3 +1,3 @@
-bucket = "your-terraform-bucket-name"
-key    = "onward/prod/terraform.tfstate"
+bucket = "onwardscredit"
+key    = "prod/terraform.tfstate"
 region = "us-east-1"
