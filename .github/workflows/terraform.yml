@@ -1,4 +1,4 @@
-name: Terraform CI/CD with Manual Approval
+name: Terraform CI/CD
 
 on:
   push:
@@ -31,7 +31,7 @@ jobs:
         with:
           terraform_version: 1.6.0
 
-      - name: 🧠 Detect Environment from Branch
+      - name: 🧠 Detect Environment
         id: env
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -51,7 +51,7 @@ jobs:
         run: terraform plan -out=tfplan -var-file=envs/${{ steps.env.outputs.env_name }}.tfvars
 
       - name: 📤 Upload tfplan artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: tfplan
           path: tfplan
@@ -64,7 +64,7 @@ jobs:
       name: ${{ needs.terraform.outputs.env_name }}
     steps:
       - name: ⏳ Awaiting Approval
-        run: echo "Waiting for approval to apply '${{ needs.terraform.outputs.env_name }}' environment..."
+        run: echo "Waiting for approval to apply '${{ needs.terraform.outputs.env_name }}'..."
 
   apply:
     name: 🚀 Terraform Apply
@@ -86,7 +86,7 @@ jobs:
         run: terraform init -backend-config=backends/${{ needs.terraform.outputs.env_name }}.backend
 
       - name: 📥 Download tfplan
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v2
         with:
           name: tfplan
 
