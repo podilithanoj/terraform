@@ -9,6 +9,11 @@ on:
     branches:
       - prod
 
+# ✅ GLOBAL ENV FOR ALL JOBS
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
 jobs:
   terraform-plan:
     name: Terraform Plan
@@ -49,11 +54,6 @@ jobs:
 
     environment:
       name: ${{ needs.terraform-plan.outputs.env_name }}
-      # 🛑 Approval happens HERE — before apply
-
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
     steps:
       - name: 📦 Checkout Code
